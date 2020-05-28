@@ -1,11 +1,11 @@
 # Code organization
 
-**Go programs are organized into packages.**
+**Go programs are organized into packages**
 
 - Package is a collection of files in the same directory, that are compiled together.
 - Functions, types, variables, and constants defined in one source file are visible to other within the same package.
 
-**A repository contains one or more modules.**
+**A repository contains one or more modules**
 
 - A module is a collection of packages that are released together
 - Go repository typically contains only one module, located at the root
