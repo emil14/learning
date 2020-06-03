@@ -130,3 +130,5 @@ To apply the new configuration, start nginx if it is not yet started or send the
 `nginx -s reload`
 
 In case something does not work as expected, you may try to find out the reason in `access.log` and `error.log` files in the directory `/usr/local/nginx/logs` or `/var/log/nginx`.
+
+## Setting Up a Simple Proxy Server
