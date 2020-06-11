@@ -1,6 +1,6 @@
-# Chapter 1. Tutorial
+# What is PostgreSQL?
 
-PostgreSQL is an object-relational database management system (ORDBMS) based on `POSTGRES`, developed at the University of California at Berkeley Computer Science Department
+`PostgreSQL` is an object-relational database management system (ORDBMS) based on `POSTGRES`, developed at the University of California at Berkeley Computer Science Department
 
 PostgreSQL is an open-source descendant of this original Berkeley code
 
@@ -73,4 +73,3 @@ To get out of psql, type:
 For more internal commands, type `\?` at the psql prompt.
 
 # Chapter 2. The SQL Language
-
