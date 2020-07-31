@@ -77,3 +77,13 @@ The output is three Base64-URL strings separated by dots that can be easily pass
 - you should not keep tokens longer than required
 - You also should not store sensitive session data in browser storage due to lack of security.
 - If the token is sent in the Authorization header, Cross-Origin Resource Sharing (CORS) won't be an issue as it doesn't use cookies.
+
+https://www.sohamkamani.com/1c2963a562418d9fccfa9c6667da826c/jwt-algo.svg
+
+The details of how the algorithm is implemented is out of scope for this post, but the important thing to note is that it is one way, which means that we cannot reverse the algorithm and obtain the components that went into making the signature… so our secret key remains secret.
+
+In order to verify an incoming JWT, a signature is once again generated using the header and payload from the incoming JWT, and the secret key. If the signature matches the one on the JWT, then the JWT is considered valid.
+
+You can easily generate the header and payload, but without knowing the key, there is no way to generate a valid signature.
+
+- https://www.sohamkamani.com/golang/2019-01-01-jwt-authentication/#implementation-in-go
