@@ -114,4 +114,67 @@ SELECT DISTINCT city
 
 # Joins Between Tables
 
+Queries can access multiple tables at once, or access the same table in such a way that multiple rows of the table are being processed at the same time.
+
+A query that accesses multiple rows of the same or different tables at one time is called a join query
+
+As an example, say you wish to list all the weather records together with the location of the associated city. To do that, we need to compare the city column of each row of the weather table with the name column of all rows in the cities table, and select the pairs of rows where these values match.
+
+SELECT \*
+FROM weather, cities
+WHERE city = name;
+
+     city      | temp_lo | temp_hi | prcp |    date    |     name      | location
+
+---------------+---------+---------+------+------------+---------------+-----------
+San Francisco | 46 | 50 | 0.25 | 1994-11-27 | San Francisco | (-194,53)
+San Francisco | 43 | 57 | 0 | 1994-11-29 | San Francisco | (-194,53)
 ...
+
+- join ignores the unmatched rows
+- lists of columns from the weather and cities tables are concatenated
+
+In practice this is undesirable, though, so you will probably want to list the output columns explicitly rather than using \*:
+
+```sql
+SELECT city, temp_lo, temp_hi, prcp, date, location
+    FROM weather, cities
+    WHERE city = name;
+```
+
+Since the columns all had different names, the parser automatically found which table they belong to.
+
+If there were duplicate column names in the two tables you'd need to qualify the column names to show which one you meant, as in:
+
+```sql
+SELECT weather.city, weather.temp_lo, weather.temp_hi,
+    weather.prcp, weather.date, cities.location
+    FROM weather, cities
+    WHERE cities.name = weather.city;
+```
+
+It is widely considered **good style to qualify all column names in a join query, so that the query won't fail** if a duplicate column name is later added to one of the tables.
+
+Can also be written in this alternative form:
+
+```sql
+SELECT *
+    FROM weather INNER JOIN cities ON (weather.city = cities.name);
+```
+
+This syntax is not as commonly used as the one above
+
+Now we will figure out how we can get the Hayward records back in. What we want the query to do is to scan the weather table and for each row to find the matching cities row(s). If no matching row is found we want some “empty values” to be substituted for the cities table's columns. This kind of query is called an outer join. (The joins we have seen so far are inner joins.)
+
+```sql
+SELECT *
+    FROM weather LEFT OUTER JOIN cities ON (weather.city = cities.name);
+
+     city      | temp_lo | temp_hi | prcp |    date    |     name      | location
+---------------+---------+---------+------+------------+---------------+-----------
+ Hayward       |      37 |      54 |      | 1994-11-29 |               |
+ San Francisco |      46 |      50 | 0.25 | 1994-11-27 | San Francisco | (-194,53)
+ San Francisco |      43 |      57 |    0 | 1994-11-29 | San Francisco | (-194,53)
+```
+
+This query **is called a left outer join because the table mentioned on the left will have each of its rows at least once, whereas the table on the right will only have rows that match some row of the left**
