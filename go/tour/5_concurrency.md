@@ -202,3 +202,222 @@ func main() {
 	}
 }
 ```
+
+# Exercise: Equivalent Binary Trees
+
+```go
+package main
+
+import (
+	"fmt"
+	"golang.org/x/tour/tree"
+)
+
+// Walk walks the tree t sending all values
+// from the tree to the channel ch.
+func Walk(t *tree.Tree, ch chan int) {
+	if t == nil {
+		return
+	}
+	Walk(t.Left, ch)
+	ch <- t.Value
+	Walk(t.Right, ch)
+}
+
+// Same determines whether the trees
+// t1 and t2 contain the same values.
+func Same(t1, t2 *tree.Tree) bool {
+	ch1, ch2 := make(chan int), make(chan int)
+	go Walk(t1, ch1)
+	go Walk(t2, ch2)
+	for i := 0; i < 10; i ++ {
+		if <-ch1 != <-ch2 {
+			return false
+		}
+	}
+	return true
+}
+
+func main() {
+	ch := make(chan int)
+	go Walk(tree.New(1), ch)
+	for i := 0; i < 10; i ++ {
+		fmt.Println(<-ch)
+	}
+
+	t1 := tree.New(1)
+	t2 := tree.New(1)
+	fmt.Println(Same(t1, t2))
+}
+```
+
+# sync.Mutex
+
+What if we don't need communication? What if we just want to make sure only one goroutine can access a variable at a time to avoid conflicts?
+
+Go's standard library provides mutual exclusion with sync.Mutex and its two methods:
+
+```
+Lock
+Unlock
+```
+
+We can define a block of code to be executed in mutual exclusion by surrounding it with a call to Lock and Unlock as shown on the Inc method.
+
+We can also use `defer` to ensure the mutex will be unlocked as in the Value method.
+
+```go
+package main
+
+import (
+	"fmt"
+	"sync"
+	"time"
+)
+
+// SafeCounter is safe to use concurrently.
+type SafeCounter struct {
+	v   map[string]int
+	mux sync.Mutex
+}
+
+// Inc increments the counter for the given key.
+func (c *SafeCounter) Inc(key string) {
+	c.mux.Lock()
+	// Lock so only one goroutine at a time can access the map c.v.
+	c.v[key]++
+	c.mux.Unlock()
+}
+
+// Value returns the current value of the counter for the given key.
+func (c *SafeCounter) Value(key string) int {
+	c.mux.Lock()
+	// Lock so only one goroutine at a time can access the map c.v.
+	defer c.mux.Unlock()
+	return c.v[key]
+}
+
+func main() {
+	c := SafeCounter{v: make(map[string]int)}
+	for i := 0; i < 1000; i++ {
+		go c.Inc("somekey")
+	}
+
+	time.Sleep(time.Second)
+	fmt.Println(c.Value("somekey"))
+}
+```
+
+# Exercise: Web Crawler
+
+In this exercise you'll use Go's concurrency features to parallelize a web crawler.
+
+Modify the Crawl function to fetch URLs in parallel without fetching the same URL twice.
+
+Hint: you can keep a cache of the URLs that have been fetched on a map, but maps alone are not safe for concurrent use! 
+
+```go
+package main
+
+import (
+	"fmt"
+	"sync"
+)
+
+type Fetcher interface {
+	Fetch(url string) (body string, urls []string, err error)
+}
+type SafeCounter struct {
+	v   map[string]bool
+	mux sync.Mutex
+	wg  sync.WaitGroup
+}
+
+var c SafeCounter = SafeCounter{v: make(map[string]bool)}
+
+func (s SafeCounter) checkvisited(url string) bool {
+	s.mux.Lock()
+	defer s.mux.Unlock()
+	_, ok := s.v[url]
+	if ok == false {
+		s.v[url] = true
+		return false
+	}
+	return true
+
+}
+
+func Crawl(url string, depth int, fetcher Fetcher) {
+	defer c.wg.Done()
+	if depth <= 0 {
+		return
+	}
+	if c.checkvisited(url) {
+		return
+	}
+	body, urls, err := fetcher.Fetch(url)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	fmt.Printf("found: %s %q\n", url, body)
+	for _, u := range urls {
+		c.wg.Add(1)
+		go Crawl(u, depth-1, fetcher)
+	}
+	return
+}
+
+func main() {
+	c.wg.Add(1)
+	Crawl("http://golang.org/", 4, fetcher)
+	c.wg.Wait()
+}
+
+type fakeFetcher map[string]*fakeResult
+
+type fakeResult struct {
+	body string
+	urls []string
+}
+
+func (f fakeFetcher) Fetch(url string) (string, []string, error) {
+	if res, ok := f[url]; ok {
+		return res.body, res.urls, nil
+	}
+	return "", nil, fmt.Errorf("not found: %s", url)
+}
+
+var fetcher = fakeFetcher{
+	"http://golang.org/": &fakeResult{
+		"The Go Programming Language",
+		[]string{
+			"http://golang.org/pkg/",
+			"http://golang.org/cmd/",
+		},
+	},
+	"http://golang.org/pkg/": &fakeResult{
+		"Packages",
+		[]string{
+			"http://golang.org/",
+			"http://golang.org/cmd/",
+			"http://golang.org/pkg/fmt/",
+			"http://golang.org/pkg/os/",
+		},
+	},
+	"http://golang.org/pkg/fmt/": &fakeResult{
+		"Package fmt",
+		[]string{
+			"http://golang.org/",
+			"http://golang.org/pkg/",
+		},
+	},
+	"http://golang.org/pkg/os/": &fakeResult{
+		"Package os",
+		[]string{
+			"http://golang.org/",
+			"http://golang.org/pkg/",
+		},
+	},
+}
+```
